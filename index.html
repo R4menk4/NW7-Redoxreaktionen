@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Redoxreaktionen von Metallen</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Naturwissenschaften Klasse 7</p>
+        <h1>Redoxreaktionen von Metallen</h1>
+        <p class="subtitle">Wer bekommt den Sauerstoff?</p>
+      </div>
+      <button class="ghost-button" id="seriesToggle" type="button" aria-expanded="true">ⓘ Redoxreihe</button>
+    </header>
+
+    <aside class="series-panel" id="seriesPanel" aria-label="Redoxreihe">
+      <span class="series-edge">unedel</span>
+      <span class="series-arrow">→</span>
+      <ol class="redox-series" id="redoxSeries"></ol>
+      <span class="series-arrow">→</span>
+      <span class="series-edge warm">edel</span>
+    </aside>
+
+    <main class="app-shell">
+      <section class="progress-area" aria-label="Fortschritt">
+        <div class="progress-meta">
+          <span id="progressText">Startseite</span>
+          <span id="attemptText"></span>
+        </div>
+        <div class="progress-track" aria-hidden="true">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </section>
+
+      <section class="screen-card" id="app" aria-live="polite"></section>
+    </main>
+
+    <template id="feedbackTemplate">
+      <div class="feedback" role="status"></div>
+    </template>
+
+    <script src="script.js"></script>
+  </body>
+</html>
