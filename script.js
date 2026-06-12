@@ -125,12 +125,11 @@ const labScenarios = [
 
 const stations = [
   { title: "Startseite", render: renderStart },
-  { title: "Station 1 von 6", render: renderStationOne },
-  { title: "Station 2 von 6", render: renderStationTwo },
-  { title: "Station 3 von 6", render: renderStationThree },
-  { title: "Station 4 von 6", render: renderStationFour },
-  { title: "Station 5 von 6", render: renderStationFive },
-  { title: "Station 6 von 6", render: renderStationSix },
+  { title: "Station 1 von 5", render: renderStationOne },
+  { title: "Station 2 von 5", render: renderStationTwo },
+  { title: "Station 3 von 5", render: renderStationThree },
+  { title: "Station 4 von 5", render: renderStationFive },
+  { title: "Station 5 von 5", render: renderStationSix },
   { title: "Abschluss", render: renderFinish }
 ];
 
@@ -169,7 +168,12 @@ function reactionText(reaction) {
 }
 
 function shuffle(items) {
-  return [...items].sort(() => Math.random() - 0.5);
+  const mixed = [...items];
+  for (let index = mixed.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [mixed[index], mixed[swapIndex]] = [mixed[swapIndex], mixed[index]];
+  }
+  return mixed;
 }
 
 function setScreen(index) {
@@ -264,6 +268,7 @@ function renderStart() {
 
 function renderStationOne() {
   const pair = stationOnePairs[state.stationOneIndex];
+  const choices = shuffle(pair);
   const correct = pair.reduce((best, metal) => (isLessNoble(metal, best) ? metal : best));
   app.innerHTML = `
     ${header(
@@ -272,13 +277,15 @@ function renderStationOne() {
       "Schau in der Redoxreihe nach: Weiter links bedeutet unedler und nimmt Sauerstoff leichter auf."
     )}
     <div class="choice-grid">
-      ${pair.map((metal) => `<button class="metal-card" type="button" data-metal="${metal}">${metal}</button>`).join("")}
+      ${choices.map((metal) => `<button class="metal-card" type="button" data-metal="${metal}">${metal}</button>`).join("")}
     </div>
   `;
   attachHelp();
   app.querySelectorAll("[data-metal]").forEach((button) => {
     button.addEventListener("click", () => {
       clearFeedback();
+      app.querySelectorAll("[data-metal]").forEach((item) => item.classList.remove("is-selected"));
+      button.classList.add("is-selected");
       const chosen = button.dataset.metal;
       if (chosen === correct) {
         feedback(`Richtig! ${chosen} ist unedler als ${pair.find((metal) => metal !== chosen)}. Deshalb nimmt ${chosen} Sauerstoff leichter auf.`, "success");
@@ -422,7 +429,9 @@ function renderStationTwo() {
 
 function renderStationThree() {
   const reaction = reactions[3];
-  const cards = [oxide(reaction.oxideMetal), reaction.freeMetal];
+  const cards = shuffle([oxide(reaction.oxideMetal), reaction.freeMetal]);
+  const reductionButtons = shuffle(["Reduktion", "Oxidation"]);
+  const oxidationButtons = shuffle(["Reduktion", "Oxidation"]);
   let start = "";
   let target = "";
   let reductionChoice = "";
@@ -435,20 +444,18 @@ function renderStationThree() {
     )}
     <div class="reaction-line">${reactionText(reaction)}</div>
     <div class="oxygen-area">
-      ${cards.map((label) => `<button class="metal-card" type="button" data-oxygen-card="${label}">${label}</button>`).join('<div class="oxygen-arrow">Sauerstoff →</div>')}
+      ${cards.map((label) => `<button class="metal-card" type="button" data-oxygen-card="${label}">${label}</button>`).join('<div class="oxygen-arrow">Sauerstoff</div>')}
     </div>
     <div class="tip-box" id="arrowChoice">Noch kein Pfeil gesetzt.</div>
     <section class="hidden" id="meaningArea">
       <h3>Was bedeutet das?</h3>
       <p>Sauerstoff abgeben bedeutet …</p>
       <div class="button-row" data-meaning="reduction">
-        <button class="choice-button" type="button" data-value="Reduktion">Reduktion</button>
-        <button class="choice-button" type="button" data-value="Oxidation">Oxidation</button>
+        ${reductionButtons.map((value) => `<button class="choice-button" type="button" data-value="${value}">${value}</button>`).join("")}
       </div>
       <p>Sauerstoff aufnehmen bedeutet …</p>
       <div class="button-row" data-meaning="oxidation">
-        <button class="choice-button" type="button" data-value="Reduktion">Reduktion</button>
-        <button class="choice-button" type="button" data-value="Oxidation">Oxidation</button>
+        ${oxidationButtons.map((value) => `<button class="choice-button" type="button" data-value="${value}">${value}</button>`).join("")}
       </div>
       <div class="button-row">
         <button class="primary-button" type="button" id="checkOxygen">Prüfen</button>
@@ -460,11 +467,14 @@ function renderStationThree() {
   app.querySelectorAll("[data-oxygen-card]").forEach((button) => {
     button.addEventListener("click", () => {
       if (!start || (start && target)) {
+        app.querySelectorAll("[data-oxygen-card]").forEach((item) => item.classList.remove("is-selected"));
         start = button.dataset.oxygenCard;
         target = "";
+        button.classList.add("is-selected");
         choiceBox.textContent = `Start: ${start}. Wähle jetzt das Ziel.`;
       } else {
         target = button.dataset.oxygenCard;
+        button.classList.add("is-selected");
         choiceBox.textContent = `Dein Sauerstoff-Pfeil: ${start} → ${target}`;
         app.querySelector("#meaningArea").classList.remove("hidden");
       }
@@ -493,67 +503,6 @@ function renderStationThree() {
   });
 }
 
-function renderStationFour() {
-  const reaction = reactions[4];
-  const roleCards = ["wird oxidiert", "wird reduziert", "Reduktionsmittel", "Oxidationsmittel"];
-  app.innerHTML = `
-    ${header(
-      "Rollen vergeben",
-      "Ziehe oder tippe die Rollenkarten auf die passenden Stoffkarten.",
-      "Das freie unedlere Metall nimmt Sauerstoff auf. Das Metalloxid gibt Sauerstoff ab."
-    )}
-    <div class="reaction-line">${reactionText(reaction)}</div>
-    <div class="cards-grid">${roleCards.map((role) => `<button class="role-card" type="button" draggable="true" data-card="${role}">${role}</button>`).join("")}</div>
-    <div class="role-grid">
-      ${[oxide(reaction.oxideMetal), reaction.freeMetal, reaction.oxideMetal, oxide(reaction.freeMetal)].map((label) => `
-        <div class="drop-zone role-target" tabindex="0" data-zone="${label}">
-          <span class="drop-label">${label}</span>
-          <div class="role-slots drop-content">Rollen hier ablegen</div>
-        </div>
-      `).join("")}
-    </div>
-    <div class="button-row">
-      <button class="primary-button" type="button" id="checkRoles">Prüfen</button>
-    </div>
-  `;
-  attachHelp();
-  initCardPlacement(app, null, (cardId, zoneId) => {
-    const zone = app.querySelector(`[data-zone="${zoneId}"] .drop-content`);
-    const card = app.querySelector(`[data-card="${cardId}"]`);
-    if (!zone || !card) return;
-    app.querySelectorAll(`.role-pill[data-role="${cardId}"]`).forEach((pill) => pill.remove());
-    if (zone.textContent === "Rollen hier ablegen") zone.textContent = "";
-    zone.classList.add("has-card");
-    const pill = document.createElement("span");
-    pill.className = "role-pill";
-    pill.dataset.role = cardId;
-    pill.textContent = cardId;
-    zone.append(pill);
-    card.classList.remove("is-selected");
-    state.selectedCard = null;
-  });
-  app.querySelector("#checkRoles").addEventListener("click", () => {
-    const freeMetalRoles = rolesForZone(reaction.freeMetal);
-    const oxideRoles = rolesForZone(oxide(reaction.oxideMetal));
-    const correct =
-      hasSameItems(freeMetalRoles, ["wird oxidiert", "Reduktionsmittel"]) &&
-      hasSameItems(oxideRoles, ["wird reduziert", "Oxidationsmittel"]);
-    if (correct) {
-      feedback(`${reaction.freeMetal} nimmt Sauerstoff auf. Es wird oxidiert und wirkt als Reduktionsmittel. ${oxide(reaction.oxideMetal)} gibt Sauerstoff ab. Es wird reduziert und wirkt als Oxidationsmittel.`, "success");
-      addNextButton();
-    } else {
-      handleWrong(
-        "Prüfe noch einmal: Das freie Metall und das Metalloxid haben jeweils zwei Rollen.",
-        `Stärkerer Tipp: ${reaction.freeMetal} wird oxidiert und ist Reduktionsmittel. ${oxide(reaction.oxideMetal)} wird reduziert und ist Oxidationsmittel.`
-      );
-    }
-  });
-}
-
-function rolesForZone(zoneId) {
-  return [...app.querySelectorAll(`[data-zone="${zoneId}"] .role-pill`)].map((pill) => pill.dataset.role);
-}
-
 function hasSameItems(actual, expected) {
   return actual.length === expected.length && expected.every((item) => actual.includes(item));
 }
@@ -561,6 +510,10 @@ function hasSameItems(actual, expected) {
 function renderStationFive() {
   const task = misconceptionTasks[state.stationFiveIndex];
   const corrections = task.correct ? [] : shuffle([task.correction, ...task.wrongOptions]);
+  const truthChoices = shuffle([
+    { label: "stimmt", value: "true" },
+    { label: "stimmt nicht", value: "false" }
+  ]);
   let firstAnswer = null;
   let correctionChoice = null;
   app.innerHTML = `
@@ -572,8 +525,7 @@ function renderStationFive() {
     <div class="statement-box">„${task.statement}“</div>
     <p>Stimmt diese Aussage?</p>
     <div class="button-row">
-      <button class="choice-button" type="button" data-truth="true">stimmt</button>
-      <button class="choice-button" type="button" data-truth="false">stimmt nicht</button>
+      ${truthChoices.map((choice) => `<button class="choice-button" type="button" data-truth="${choice.value}">${choice.label}</button>`).join("")}
     </div>
     <section class="tip-box hidden" id="correctionArea">
       <h3>Welche Korrektur passt?</h3>
@@ -631,6 +583,7 @@ function renderStationFive() {
 
 function renderStationSix() {
   const scenario = labScenarios[state.labIndex];
+  const options = shuffle(scenario.options);
   app.innerHTML = `
     ${header(
       "Laborentscheidung",
@@ -639,7 +592,7 @@ function renderStationSix() {
     )}
     <div class="statement-box">${scenario.prompt}</div>
     <div class="checkbox-grid">
-      ${scenario.options.map((metal) => `<button class="check-card" type="button" data-check="${metal}" aria-pressed="false">${metal}</button>`).join("")}
+      ${options.map((metal) => `<button class="check-card" type="button" data-check="${metal}" aria-pressed="false">${metal}</button>`).join("")}
     </div>
     <div class="button-row">
       <button class="primary-button" type="button" id="checkLab">Auswahl prüfen</button>
